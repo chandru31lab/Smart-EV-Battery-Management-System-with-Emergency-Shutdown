@@ -58,16 +58,16 @@
 // ─────────────────────────────────────────────
 //  WiFi
 // ─────────────────────────────────────────────
-const char* WIFI_SSID     = "srm123";
-const char* WIFI_PASSWORD = "12345678";
+const char* WIFI_SSID     = "SSID";
+const char* WIFI_PASSWORD = "PASSWORD";
 
 // ─────────────────────────────────────────────
 //  EMQX Broker
 // ─────────────────────────────────────────────
-const char* MQTT_BROKER = "jace13a6.ala.asia-southeast1.emqxsl.com";
-const int   MQTT_PORT   = 8883;
-const char* MQTT_USER   = "anish";
-const char* MQTT_PASS   = "Suneetha@123";
+const char* MQTT_BROKER = "********************************";
+const int   MQTT_PORT   = ****;
+const char* MQTT_USER   = "**********";
+const char* MQTT_PASS   = "******************";
 
 // ─────────────────────────────────────────────
 //  PUBLISH Topics  (ESP32 → Website)
