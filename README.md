@@ -1,389 +1,552 @@
-Absolutely. For a **recruiter-friendly GitHub README**, I would position this project around **embedded systems, EV electronics, ECU architecture, CAN communication, battery safety, motor control, and hardware integration** rather than making it read like an academic report.
+Yes. I understand the style you want now. The uploaded README uses a **documentation-style GitHub structure** with a strong opening tagline, badges, overview, problem, solution, architecture diagram, hardware, software, implementation details, testing, contribution, limitations, future work, and a recruiter-friendly project summary. 
 
-Below is a complete README you can directly use in the repository. It is based on the full project report you uploaded. 
+Below is your **Smart EV BMS README rewritten in that same style**, but using the actual technical details from your project report rather than copying the wearable project's content.
 
 ````markdown
-# ⚡ Smart EV Battery Management System
+# Smart EV Battery Management System
 
 ### Controlled Emergency Operation & Safe Shutdown Mechanism
 
-> An embedded EV battery management and motor-control system using dual ECUs, CAN communication, real-time sensing, thermal protection, and an IoT-enabled vehicle dashboard.
+> **A dual-ECU embedded EV battery management system that combines real-time battery monitoring, CAN-based ECU communication, intelligent thermal protection, motor control, emergency shutdown, and MQTT-enabled vehicle telemetry.**
+
+[![Platform](https://img.shields.io/badge/Platform-ESP32%20%7C%20STM32-blue)](https://www.espressif.com/)
+[![Embedded](https://img.shields.io/badge/Embedded-C%20%7C%20C%2B%2B-red)](https://www.arduino.cc/)
+[![Communication](https://img.shields.io/badge/Communication-CAN-green)](https://www.can-cia.org/)
+[![IoT](https://img.shields.io/badge/IoT-MQTT%20%7C%20EMQX-purple)](https://www.emqx.com/)
+[![Battery](https://img.shields.io/badge/Battery-3S%20LiPo-orange)]()
+[![Domain](https://img.shields.io/badge/Domain-EV%20%7C%20BMS-black)]()
 
 ---
 
-## 🚗 Project Overview
+## 📌 Overview
 
-The **Smart EV Battery Management System** is an embedded system developed for a small electric vehicle prototype to improve **battery safety, real-time monitoring, motor control, and fault handling**.
+The **Smart EV Battery Management System with Controlled Emergency Operation and Safe Shutdown Mechanism** is an embedded EV prototype designed to improve **battery safety, real-time monitoring, motor control, and fault response**.
 
-The system uses a **dual-ECU architecture**:
+The system uses a **dual-ECU architecture**, where each microcontroller is assigned a dedicated role:
 
-- **ESP32 ECU** – Battery sensor monitoring, data acquisition, MQTT communication, and dashboard control
-- **STM32 ECU** – Motor control, thermal protection, PWM generation, and encoder feedback processing
+- 🔋 **ESP32 ECU** – Battery sensor monitoring, data acquisition, SOC estimation, MQTT communication, and dashboard control
+- ⚙️ **STM32 ECU** – Motor control, PWM generation, thermal protection, emergency shutdown, and encoder feedback processing
 
-The two ECUs communicate through a **500 kbps CAN bus**, providing a reliable communication link between the battery monitoring and motor-control subsystems.
+The two ECUs communicate through a **500 kbps CAN bus**, while the ESP32 communicates with an **EMQX MQTT broker** to provide live telemetry and remote control through the **NEXUS EV Dashboard**.
 
-A web-based **NEXUS EV Dashboard** provides real-time battery telemetry, motor information, drive-mode selection, manual control, and emergency alerts through MQTT and WebSocket communication.
+The system continuously monitors:
 
-The system was designed around a **3S LiPo battery pack** and implements protection against:
+* 🔋 Battery voltage
+* ⚡ Battery current
+* 🌡️ Battery temperature
+* 🏎️ Motor RPM
+* 🔋 State of Charge
+* 🚨 Fault conditions
 
-- 🌡️ Over-temperature
-- ⚡ Overcurrent
-- 🔋 Overvoltage
-- 🔻 Undervoltage
-- 🚨 Emergency motor shutdown
-- 🔋 Low battery condition
+The BMS can automatically respond to unsafe conditions through **PWM derating or complete motor shutdown**.
 
 ---
 
-## 🎯 Why We Built It
+# 🎯 Problem
 
-Many low-cost EV prototypes rely mainly on basic battery protection circuits that can disconnect the battery during unsafe conditions but provide limited communication, diagnostics, or coordinated motor control.
+Small EV prototypes often use basic battery protection circuits that provide only simple voltage cutoff functionality.
 
-This project addresses that limitation by creating an integrated architecture where:
+Such systems may not provide:
+
+* Real-time battery monitoring
+* Motor-controller coordination
+* Current monitoring
+* Temperature-based motor control
+* Remote telemetry
+* Fault visualization
+* Intelligent emergency response
+
+This creates a gap between **battery protection and vehicle control**.
+
+For example:
 
 ```text
-Battery → Sensors → ESP32 ECU → CAN → STM32 ECU → Motor
-                     ↓                    ↓
-                   MQTT                Protection
-                     ↓
-              NEXUS Dashboard
+Battery Overheating
+        ↓
+Basic Protection Circuit
+        ↓
+Battery Cutoff
 ````
 
-The system therefore combines:
+The proposed system instead provides:
 
-**Battery Monitoring + Embedded Control + CAN + Motor Control + IoT + Safety Logic**
+```text
+Battery Condition
+        ↓
+Sensor Monitoring
+        ↓
+ESP32 ECU
+        ↓
+CAN
+        ↓
+STM32 ECU
+        ↓
+Controlled Motor Response
+        ↓
+Dashboard Alert
+```
+
+The goal is to make the battery management system an **active part of the vehicle control architecture** rather than an isolated protection circuit.
 
 ---
 
-# 🧠 System Architecture
+# 💡 Proposed Solution
+
+The system integrates battery monitoring and motor control using two embedded ECUs.
+
+### ESP32 ECU
+
+The ESP32 acts as the **Battery Monitoring & Vehicle Communication ECU**.
+
+It performs:
+
+1. Battery voltage measurement
+2. Battery current measurement
+3. Temperature measurement
+4. Motor RPM calculation
+5. SOC estimation
+6. MQTT communication
+7. Dashboard command reception
+8. CAN communication with STM32
+
+### STM32 ECU
+
+The STM32 acts as the **Real-Time Motor Control ECU**.
+
+It performs:
+
+1. CAN command reception
+2. PWM generation
+3. Motor direction control
+4. Thermal derating
+5. Emergency shutdown
+6. TB6612FNG control
+7. Motor control based on battery conditions
+
+---
+
+# 🏗️ System Architecture
 
 ```text
                          ┌─────────────────────────┐
-                         │      3S LiPo Battery    │
-                         │     11.1V Nominal       │
-                         │     12.6V Fully Charged │
+                         │       3S LiPo Battery   │
+                         │                         │
+                         │   11.1V Nominal        │
+                         │   12.6V Fully Charged  │
+                         │   9.0V Cutoff          │
                          └────────────┬────────────┘
                                       │
-                  ┌───────────────────┴──────────────────┐
-                  │                                      │
-                  ▼                                      ▼
-        ┌───────────────────┐                  ┌──────────────────┐
-        │ Battery Sensors   │                  │  Buck Converter  │
-        │                   │                  │                  │
-        │ Voltage Divider   │                  │  5V / 3.3V Rails │
-        │ ACS712 Current    │                  └────────┬─────────┘
-        │ DS18B20 Temp      │                           │
-        └─────────┬─────────┘                           │
-                  │                                     │
-                  ▼                                     │
-        ┌─────────────────────────┐                     │
-        │       ESP32 ECU         │◄────────────────────┘
-        │                         │
-        │ • Sensor Monitoring     │
-        │ • SOC Estimation        │
-        │ • MQTT Communication    │
-        │ • Dashboard Control     │
-        │ • CAN Transmission      │
-        └────────────┬────────────┘
-                     │
-                  CAN BUS
-                  500 kbps
-                     │
-                     ▼
-        ┌─────────────────────────┐
-        │       STM32 ECU         │
-        │                         │
-        │ • CAN Reception         │
-        │ • Motor Control         │
-        │ • PWM Generation        │
-        │ • Thermal Protection    │
-        │ • Emergency Shutdown    │
-        │ • Encoder Processing    │
-        └────────────┬────────────┘
-                     │
-                     ▼
-              ┌───────────────┐
-              │ TB6612FNG H-Bridge │
-              └───────┬───────┘
-                      │
-                      ▼
-              ┌───────────────┐
-              │ Encoder Motor │
-              └───────┬───────┘
-                      │
-                  Encoder
-                      │
-                      ▼
-                  ESP32 ECU
-
-
-             ESP32 ↔ MQTT ↔ EMQX
+                    ┌─────────────────┴─────────────────┐
+                    │                                   │
+                    ▼                                   ▼
+          ┌────────────────────┐              ┌──────────────────┐
+          │ Battery Sensors    │              │  Buck Converter  │
+          │                    │              │                  │
+          │ Voltage Divider    │              │   5V / 3.3V     │
+          │ ACS712-30A         │              │   Logic Supply   │
+          │ DS18B20            │              └────────┬─────────┘
+          └──────────┬─────────┘                       │
+                     │                                 │
+                     ▼                                 ▼
+          ┌──────────────────────────────┐
+          │          ESP32 ECU            │
+          │                              │
+          │ • Voltage Monitoring         │
+          │ • Current Monitoring         │
+          │ • Temperature Monitoring     │
+          │ • RPM Measurement            │
+          │ • SOC Estimation             │
+          │ • MQTT Communication         │
+          │ • Dashboard Control          │
+          │ • CAN Transmission           │
+          └──────────────┬───────────────┘
+                         │
+                         │ CAN
+                         │ 500 kbps
+                         ▼
+          ┌──────────────────────────────┐
+          │          STM32 ECU            │
+          │                              │
+          │ • CAN Reception              │
+          │ • Motor Control              │
+          │ • PWM Generation             │
+          │ • Thermal Protection         │
+          │ • Emergency Shutdown         │
+          │ • Encoder Processing         │
+          └──────────────┬───────────────┘
                          │
                          ▼
-               ┌──────────────────┐
-               │ NEXUS EV Dashboard│
-               │                  │
-               │ • Battery Status │
-               │ • Current        │
-               │ • Temperature    │
-               │ • RPM / Speed    │
-               │ • Drive Modes    │
-               │ • PWM Control    │
-               │ • Direction      │
-               │ • Fault Alerts   │
-               └──────────────────┘
+                  ┌───────────────┐
+                  │   TB6612FNG   │
+                  │ Motor Driver  │
+                  └───────┬───────┘
+                          │
+                          ▼
+                  ┌───────────────┐
+                  │ Encoder Motor │
+                  └───────┬───────┘
+                          │
+                          │ Encoder Feedback
+                          ▼
+                       ESP32 ECU
+
+
+             ESP32
+                │
+                │ MQTT
+                ▼
+          ┌─────────────┐
+          │    EMQX     │
+          │ MQTT Broker │
+          └──────┬──────┘
+                 │
+                 │ WebSocket
+                 ▼
+       ┌──────────────────────┐
+       │  NEXUS EV Dashboard  │
+       │                      │
+       │ • Battery Status     │
+       │ • Voltage            │
+       │ • Current            │
+       │ • Temperature        │
+       │ • RPM / Speed        │
+       │ • Drive Modes        │
+       │ • PWM Control        │
+       │ • Direction          │
+       │ • Emergency Alerts   │
+       └──────────────────────┘
 ```
 
 ---
 
-# 🔩 Hardware Architecture
+# 🧩 Hardware Components
 
-## 1. ESP32 ECU
+## Battery & Power
 
-The ESP32 acts as the **battery monitoring and vehicle communication ECU**.
-
-### Responsibilities
-
-* Read battery voltage
-* Measure battery current
-* Measure battery temperature
-* Calculate motor RPM
-* Estimate State of Charge
-* Communicate with the STM32 through CAN
-* Publish telemetry through MQTT
-* Receive dashboard commands
-* Relay control commands to the STM32
+| Component       | Specification           | Purpose                 |
+| --------------- | ----------------------- | ----------------------- |
+| 3S LiPo Battery | 11.1V, 35C              | Main energy source      |
+| Buck Converter  | 9–15V input → 5V / 3.3V | Logic power supply      |
+| Voltage Divider | 10kΩ / 2.2kΩ            | Battery voltage sensing |
 
 ---
 
-## 2. STM32 ECU
+## ESP32 ECU
 
-The STM32 acts as the **real-time motor-control ECU**.
-
-### Responsibilities
-
-* Receive commands through CAN
-* Generate motor PWM
-* Control motor direction
-* Apply thermal derating
-* Detect emergency temperature conditions
-* Disable motor during critical faults
-* Interface with the TB6612FNG motor driver
-
-This separation allows the system to divide responsibilities between:
-
-```text
-ESP32 → Monitoring + Connectivity
-STM32 → Deterministic Motor Control + Safety
-```
+| Component       | Purpose                                |
+| --------------- | -------------------------------------- |
+| ESP32           | Sensor acquisition + IoT communication |
+| ACS712-30A      | Battery current measurement            |
+| DS18B20         | Battery temperature measurement        |
+| Voltage Divider | Pack voltage measurement               |
+| MCP2515         | CAN communication                      |
+| Encoder Input   | Motor RPM measurement                  |
 
 ---
 
-# 📡 Communication Architecture
+## STM32 ECU
 
-The project uses two communication layers.
-
-### CAN Bus
-
-Used for communication between the two ECUs.
-
-**Configuration:**
-
-* Protocol: CAN
-* Bit rate: 500 kbps
-* Interface: MCP2515
-* Physical signals: CAN_H / CAN_L
-* Termination: 120 Ω at each end
-
-CAN was selected because it provides differential signalling and is well suited for communication in electrically noisy motor-control environments.
-
-### MQTT
-
-Used for IoT telemetry and dashboard communication.
-
-```text
-ESP32
-  │
-  │ MQTT
-  ▼
-EMQX Broker
-  │
-  │ WebSocket
-  ▼
-NEXUS EV Dashboard
-```
-
----
-
-# 📊 Sensors & Instrumentation
-
-| Component       | Specification      | Purpose                     |
-| --------------- | ------------------ | --------------------------- |
-| Voltage Divider | 10 kΩ / 2.2 kΩ     | Battery voltage measurement |
-| ACS712-30A      | ±30 A, 66 mV/A     | Battery current measurement |
-| DS18B20         | 12-bit, 1-Wire     | Battery surface temperature |
-| Encoder Motor   | Quadrature encoder | Motor speed / RPM feedback  |
-
-The ESP32 polls the sensor data at approximately **100 ms intervals**.
+| Component         | Purpose                    |
+| ----------------- | -------------------------- |
+| STM32             | Real-time motor controller |
+| MCP2515           | CAN communication          |
+| TB6612FNG         | Motor driving              |
+| Encoder Interface | Motor feedback             |
+| PWM Timer         | Motor speed control        |
 
 ---
 
 # 🔋 Battery Configuration
 
-The prototype uses a:
+The prototype uses a **3S LiPo battery pack**.
 
-**3S LiPo Battery Pack**
+| Parameter            |  Value |
+| -------------------- | -----: |
+| Configuration        |     3S |
+| Nominal Voltage      | 11.1 V |
+| Fully Charged        | 12.6 V |
+| Minimum Voltage      |  9.0 V |
+| Continuous Discharge |    35C |
 
-| Parameter                   |  Value |
-| --------------------------- | -----: |
-| Configuration               |     3S |
-| Nominal Voltage             | 11.1 V |
-| Fully Charged               | 12.6 V |
-| Minimum Voltage             |  9.0 V |
-| Continuous Discharge Rating |    35C |
+The system monitors the aggregate battery voltage and uses software-defined voltage boundaries for protection.
 
-The voltage boundaries are monitored continuously to prevent unsafe operating conditions.
+---
+
+# 📊 Battery Monitoring
+
+Three primary battery parameters are monitored.
+
+### Voltage
+
+A resistor divider scales the battery voltage into the ESP32 ADC input range.
+
+```text
+Battery
+   ↓
+10kΩ / 2.2kΩ Divider
+   ↓
+ESP32 ADC
+   ↓
+Pack Voltage
+```
+
+### Current
+
+The **ACS712-30A Hall-effect current sensor** measures the battery current.
+
+```text
+Battery
+   ↓
+ACS712
+   ↓
+Motor Driver
+```
+
+The sensor provides a ratiometric output centered around VCC/2.
+
+### Temperature
+
+The **DS18B20** is mounted directly on the battery cell surface.
+
+```text
+Battery Cell
+     ↓
+DS18B20
+     ↓
+1-Wire
+     ↓
+ESP32
+```
+
+---
+
+# 🧠 Dual-ECU Architecture
+
+One of the key design aspects of this project is the separation of monitoring and real-time motor control.
+
+## ESP32 ECU — Monitoring & Connectivity
+
+```text
+Sensors
+   ↓
+ESP32
+   ├── Battery Monitoring
+   ├── SOC Estimation
+   ├── RPM Calculation
+   ├── MQTT
+   ├── Dashboard
+   └── CAN
+```
+
+The ESP32 handles connectivity-heavy tasks while collecting real-time battery data.
+
+---
+
+## STM32 ECU — Motor Control & Safety
+
+```text
+CAN
+ ↓
+STM32
+ ├── PWM
+ ├── Direction
+ ├── Thermal Protection
+ ├── Emergency Shutdown
+ └── Motor Driver
+```
+
+The STM32 handles the real-time motor-control functions independently of the web dashboard.
+
+### Design Philosophy
+
+> **ESP32 → Monitoring + Connectivity**
+
+> **STM32 → Deterministic Motor Control + Safety**
+
+This architecture separates high-level communication from real-time actuation.
+
+---
+
+# 📡 CAN Communication
+
+CAN provides communication between the ESP32 ECU and STM32 ECU.
+
+### Configuration
+
+```text
+Protocol       → CAN
+Bit Rate       → 500 kbps
+Interface      → MCP2515
+Physical Bus   → CAN_H / CAN_L
+Termination    → 120Ω
+```
+
+The CAN frame carries motor-control information such as:
+
+```text
+PWM Duty Cycle
+Motor Frequency
+Motor Direction
+```
+
+The ESP32 transmits the required motor command and the STM32 decodes the frame to control the motor.
 
 ---
 
 # 🌡️ Three-Zone Thermal Management
 
-One of the key features of the project is the **three-zone thermal protection strategy**.
+The thermal-management system is one of the main safety features of the project.
 
-Instead of immediately shutting down the motor when temperature rises, the system progressively reduces motor power.
-
-### 🟢 Zone 1 — Normal
-
-**Temperature < 40°C**
-
-```text
-Commanded PWM
-      ↓
-Motor operates normally
-```
-
-The full commanded PWM is allowed.
+Instead of immediately shutting down the motor when temperature increases, the system first **derates the motor output**.
 
 ---
 
-### 🟡 Zone 2 — Warning / Derating
-
-**40°C ≤ Temperature ≤ 55°C**
-
-The STM32 progressively reduces the motor PWM based on temperature.
+## 🟢 Zone 1 — Normal
 
 ```text
-Higher Temperature
+Temperature < 40°C
+```
+
+The commanded PWM is applied without modification.
+
+```text
+Dashboard PWM
+      ↓
+STM32
+      ↓
+Full Motor Output
+```
+
+---
+
+## 🟡 Zone 2 — Warning
+
+```text
+40°C ≤ Temperature ≤ 55°C
+```
+
+The STM32 applies proportional PWM derating.
+
+```text
+Temperature Increase
         ↓
-Higher PWM Reduction
+PWM Reduction
         ↓
 Lower Motor Output
         ↓
-Reduced Battery Heating
+Reduced Thermal Stress
 ```
 
-This allows the vehicle to continue operating while reducing thermal stress.
+The system therefore allows continued operation while reducing the thermal load.
 
 ---
 
-### 🔴 Zone 3 — Emergency
+## 🔴 Zone 3 — Emergency
 
-**Temperature > 55°C**
+```text
+Temperature > 55°C
+```
 
-The STM32 immediately disables the motor by pulling the **TB6612FNG STBY pin LOW**.
+The motor is immediately disabled.
 
 ```text
 Temperature > 55°C
         ↓
-Emergency Condition
+STM32 Emergency Logic
         ↓
-STM32 disables motor
+TB6612FNG STBY = LOW
         ↓
-CAN emergency frame
+Motor Shutdown
         ↓
-ESP32 publishes fault
+Emergency CAN Frame
         ↓
-Dashboard displays alert
+ESP32
+        ↓
+MQTT
+        ↓
+NEXUS Dashboard
+        ↓
+🚨 OVERHEAT DETECTED
 ```
 
-The motor remains disabled until a **manual reset** is issued.
+A manual reset is required before the motor can operate again.
 
 ---
 
 # ⚠️ Battery Protection
 
-The BMS implements multiple protection mechanisms.
+The BMS provides protection against multiple abnormal conditions.
 
-### Overvoltage
+## Overvoltage
 
 ```text
 Pack Voltage > 12.6V
         ↓
-Fault
+Voltage Fault
         ↓
-Motor Disabled
+Motor Protection
+        ↓
+Dashboard Alert
 ```
 
-### Undervoltage
+## Undervoltage
 
 ```text
 Pack Voltage < 9.0V
         ↓
-Fault
+Undervoltage Fault
         ↓
-Motor Disabled / PWM Reduced
+Motor Protection
+        ↓
+Dashboard Alert
 ```
 
-### Overcurrent
+## Overcurrent
 
-The system monitors current using the ACS712-30A sensor.
+The ACS712 continuously monitors the main battery current.
 
-A sustained overcurrent condition causes the STM32 to reduce motor output and can ultimately trigger an emergency condition.
+A sustained overcurrent condition causes motor PWM reduction and can result in an emergency fault.
 
-### Over-temperature
+## Overtemperature
 
 ```text
-T < 40°C      → Normal
-40–55°C       → PWM Derating
-T > 55°C      → Emergency Shutdown
+< 40°C      → Full Power
+40–55°C     → PWM Derating
+> 55°C      → Emergency Shutdown
 ```
 
 ---
 
 # 🔋 State of Charge Estimation
 
-The system uses a combined:
+The project uses a combined **voltage lookup + coulomb counting** approach.
 
-**Voltage Lookup + Coulomb Counting**
+Approximate mapping:
 
-approach.
+| Pack Voltage |  SOC |
+| -----------: | ---: |
+|       12.6 V | 100% |
+|       11.1 V |  50% |
+|        9.6 V |  20% |
+|        9.0 V |   0% |
 
-Approximate voltage-to-SOC mapping:
+During motor operation, the ESP32 integrates current over time to estimate the charge removed from the battery.
 
-| Pack Voltage | Approx. SOC |
-| -----------: | ----------: |
-|       12.6 V |        100% |
-|       11.1 V |         50% |
-|        9.6 V |         20% |
-|        9.0 V |          0% |
-
-During operation, the ESP32 uses current measurements from the ACS712 to estimate charge consumed.
-
-The system also uses battery voltage during idle periods to correct accumulated coulomb-counting error.
+When the motor is idle, voltage-based correction is used to reduce accumulated coulomb-counting error.
 
 ---
 
 # 🖥️ NEXUS EV Dashboard
 
-The project includes a browser-based vehicle dashboard for real-time monitoring and control.
+The **NEXUS EV Dashboard** provides a browser-based interface for monitoring and controlling the vehicle.
 
 ### Dashboard Features
 
 * 🔋 Battery percentage
 * ⚡ Pack voltage
-* 🔌 Current
+* 🔌 Battery current
 * 🌡️ Temperature
-* 🏎️ Motor RPM
+* 🏎️ RPM
 * 🚗 Speed
 * 🎛️ PWM control
 * 🔄 Motor direction
@@ -393,7 +556,11 @@ The project includes a browser-based vehicle dashboard for real-time monitoring 
 * 📡 MQTT communication log
 * 🚨 Emergency alerts
 
-### Drive Modes
+---
+
+# 🚗 Drive Modes
+
+The dashboard provides four drive modes.
 
 | Mode   | PWM Limit |
 | ------ | --------: |
@@ -402,21 +569,23 @@ The project includes a browser-based vehicle dashboard for real-time monitoring 
 | SPORT  | 220 / 255 |
 | RACE   | 255 / 255 |
 
+These modes provide different maximum motor-output levels.
+
 ---
 
-# 📡 MQTT Topic Architecture
+# 📡 MQTT Communication
 
-The system uses a structured MQTT topic hierarchy.
+The ESP32 communicates with the EMQX broker using MQTT.
 
-### Telemetry
+### Telemetry Topic
 
 ```text
 vehicle/telemetry
 ```
 
-ESP32 publishes JSON telemetry data approximately every **500 ms**.
+Telemetry is published approximately every **500 ms**.
 
-Example structure:
+Example:
 
 ```json
 {
@@ -428,13 +597,15 @@ Example structure:
 }
 ```
 
-### Emergency
+---
+
+## Emergency Topic
 
 ```text
 vehicle/emergency
 ```
 
-Used for fault notifications such as:
+Possible fault messages include:
 
 ```text
 OVERHEAT
@@ -442,7 +613,9 @@ OVERCURRENT
 UNDERVOLTAGE
 ```
 
-### Control
+---
+
+## Control Topics
 
 ```text
 vehicle/control/pwm
@@ -451,58 +624,44 @@ vehicle/control/frequency
 vehicle/control/...
 ```
 
-The dashboard publishes commands, which are received by the ESP32 and forwarded to the STM32 through CAN.
+The dashboard publishes commands to EMQX.
+
+The ESP32 receives them and sends the corresponding motor-control information to the STM32 through CAN.
 
 ---
 
-# 🔄 Complete Data Flow
+# 🔄 Complete Control Flow
 
-### Battery → Dashboard
-
-```text
-Battery
-   ↓
-Voltage / Current / Temperature Sensors
-   ↓
-ESP32
-   ↓
-MQTT
-   ↓
-EMQX Broker
-   ↓
-WebSocket
-   ↓
-NEXUS Dashboard
-```
-
-### Dashboard → Motor
+## Dashboard → Motor
 
 ```text
 NEXUS Dashboard
-   ↓
-MQTT
-   ↓
-EMQX
-   ↓
-ESP32
-   ↓
-CAN
-   ↓
-STM32
-   ↓
-PWM
-   ↓
-TB6612FNG
-   ↓
-Motor
+       ↓
+     MQTT
+       ↓
+     EMQX
+       ↓
+     ESP32
+       ↓
+      CAN
+       ↓
+     STM32
+       ↓
+     PWM
+       ↓
+   TB6612FNG
+       ↓
+     Motor
 ```
 
-### Motor Feedback
+---
+
+## Motor → Dashboard
 
 ```text
 Motor
   ↓
-Quadrature Encoder
+Encoder
   ↓
 ESP32
   ↓
@@ -510,88 +669,97 @@ RPM Calculation
   ↓
 MQTT
   ↓
-Dashboard
+EMQX
+  ↓
+NEXUS Dashboard
 ```
 
 ---
 
-# 🛡️ Emergency Shutdown Flow
+# 🚨 Emergency Shutdown
+
+The emergency shutdown system is designed to prevent continued motor operation during critical battery conditions.
 
 ```text
-Battery Temperature
-        ↓
-    DS18B20
-        ↓
-      ESP32
-        ↓
-      CAN
-        ↓
-      STM32
-        ↓
- Temperature > 55°C ?
-        │
-       YES
-        ↓
-TB6612FNG STBY = LOW
-        ↓
-   Motor Shutdown
-        ↓
- Emergency CAN Frame
-        ↓
-      ESP32
-        ↓
- vehicle/emergency
-        ↓
-  NEXUS Dashboard
-        ↓
-🚨 OVERHEAT DETECTED
+Battery Condition
+       ↓
+Sensor Detection
+       ↓
+ESP32
+       ↓
+CAN
+       ↓
+STM32
+       ↓
+Critical Fault?
+       │
+      YES
+       ↓
+Motor Shutdown
+       ↓
+Emergency CAN Frame
+       ↓
+ESP32
+       ↓
+MQTT
+       ↓
+Dashboard Alert
 ```
 
-The shutdown logic prevents automatic motor restart after a critical thermal event.
+The STM32 controls the motor shutdown locally, reducing dependence on the cloud communication path for the actual safety action.
 
 ---
 
-# 🧰 Hardware Components
+# 🔌 Power Architecture
 
-| Component        | Role                            |
-| ---------------- | ------------------------------- |
-| ESP32            | Sensor monitoring, MQTT and CAN |
-| STM32            | Motor control and protection    |
-| MCP2515 × 2      | CAN interface                   |
-| 3S LiPo Battery  | Main energy source              |
-| ACS712-30A       | Current measurement             |
-| DS18B20          | Temperature measurement         |
-| Voltage Divider  | Battery voltage measurement     |
-| TB6612FNG        | Dual H-bridge motor driver      |
-| DC Encoder Motor | Vehicle drive motor             |
-| Buck Converter   | 5V / 3.3V power regulation      |
+The LiPo battery supplies two primary branches.
+
+```text
+                   3S LiPo Battery
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+              ▼                     ▼
+         ACS712 Branch         Buck Converter
+              │                     │
+              ▼                  5V / 3.3V
+        TB6612FNG                   │
+              │             ┌───────┴───────┐
+              ▼             │               │
+           Motor           ESP32          STM32
+```
+
+The voltage divider is connected across the battery terminals for voltage measurement.
+
+CAN_H and CAN_L connect the two CAN interfaces with **120Ω termination resistors at the physical ends of the bus**.
 
 ---
 
 # 💻 Software & Technologies
 
-### Embedded
+## Embedded
 
-* C / C++
+* C
+* C++
 * ESP32
 * STM32
-* ESP-IDF / Embedded firmware
+* ESP-IDF
 * STM32 HAL
-* PWM
-* GPIO
 * ADC
+* GPIO
+* PWM
 * Interrupts
 * 1-Wire
+* SPI
 
-### Communication
+## Communication
 
 * CAN
-* SPI
 * MQTT
 * WebSocket
 * JSON
 
-### IoT / Dashboard
+## IoT / Dashboard
 
 * HTML5
 * CSS3
@@ -600,28 +768,49 @@ The shutdown logic prevents automatic motor restart after a critical thermal eve
 * EMQX
 * GitHub Pages
 
-### Hardware
+## Hardware
 
+* ESP32
+* STM32
 * MCP2515
-* ACS712
+* ACS712-30A
 * DS18B20
 * TB6612FNG
-* DC Encoder Motor
+* Encoder Motor
 * Buck Converter
 
 ---
 
-# 🧪 Testing & Results
+# 🧪 Testing
 
-The prototype was tested under real operating conditions.
+The prototype was evaluated under real operating conditions.
 
-### Key Results
+### Main Tests
+
+| Test                       | Expected Result                    |
+| -------------------------- | ---------------------------------- |
+| Battery voltage monitoring | Correct voltage displayed          |
+| Current monitoring         | Real-time current measurement      |
+| Temperature monitoring     | Real-time battery temperature      |
+| Motor control              | PWM-controlled operation           |
+| Encoder feedback           | RPM measurement                    |
+| CAN communication          | ESP32 ↔ STM32 communication        |
+| MQTT telemetry             | Dashboard updates                  |
+| Thermal derating           | PWM reduction                      |
+| Emergency shutdown         | Motor immediately disabled         |
+| Manual reset               | Motor remains disabled until reset |
+
+---
+
+# 📊 Prototype Results
+
+The system achieved the following reported results:
 
 | Parameter                 |                  Result |
 | ------------------------- | ----------------------: |
-| CAN Speed                 |                500 kbps |
+| CAN Communication         |                500 kbps |
 | Sensor Polling            |                  100 ms |
-| MQTT Telemetry            |                  500 ms |
+| MQTT Telemetry Interval   |                  500 ms |
 | MQTT Round-Trip Latency   |                 ~210 ms |
 | Emergency Dashboard Alert |                 ~350 ms |
 | CAN Emergency Response    |                   <2 ms |
@@ -631,38 +820,91 @@ The prototype was tested under real operating conditions.
 
 ---
 
-## 🌡️ Thermal Test
+# 🌡️ Thermal Test
 
 During a 60-second drive test:
 
 ```text
-Motor Temperature
-27°C → 43°C
+Initial Temperature
+        ↓
+       27°C
+        ↓
+Motor Operation
+        ↓
+       43°C
+        ↓
+Zone 2
+        ↓
+PWM Derating
+        ↓
+Reduced Motor Output
 ```
 
-The system entered the warning zone and automatically reduced motor output.
+The motor temperature increased from **27°C to 43°C**, entering the warning zone.
 
-A **15% PWM reduction** was observed during the thermal event.
+The system responded by reducing motor output by approximately **15%**.
+
+This demonstrated that the proportional thermal derating mechanism was functioning.
 
 ---
 
-## 🚨 Emergency Test
+# 🚨 Emergency Test
 
-During deliberate thermal stress testing:
+A deliberate thermal stress test was performed with PWM held at:
 
 ```text
-PWM = 220 / 255
-       ↓
-Temperature > 55°C
-       ↓
-Motor Shutdown
-       ↓
-Emergency Alert
+220 / 255
 ```
 
-The dashboard displayed the **OVERHEAT DETECTED** alert and the motor remained disabled until manual reset.
+The battery surface temperature crossed the emergency threshold.
 
-Five consecutive trigger-and-reset cycles were successfully tested.
+```text
+Temperature > 55°C
+        ↓
+STM32 detects emergency
+        ↓
+Motor cutoff
+        ↓
+CAN Emergency Frame
+        ↓
+ESP32
+        ↓
+MQTT Emergency Message
+        ↓
+NEXUS Dashboard
+        ↓
+OVERHEAT DETECTED
+```
+
+The dashboard alert appeared within approximately **350 ms** of the threshold being crossed.
+
+Five consecutive emergency trigger-and-reset cycles were successfully performed.
+
+---
+
+# 📈 Communication Performance
+
+During testing:
+
+```text
+MQTT Test Duration
+        ↓
+10 minutes
+
+Message Drops
+        ↓
+0
+
+Average Round Trip
+        ↓
+210 ms
+```
+
+The measured latency was considered suitable for the gradual motor-speed control used in the prototype.
+
+However, the MQTT path is not intended to replace a deterministic real-time control loop.
+
+The actual motor protection remains locally implemented in the STM32 ECU.
 
 ---
 
@@ -670,110 +912,328 @@ Five consecutive trigger-and-reset cycles were successfully tested.
 
 This was a **three-member team project**.
 
-My primary contribution focused on **embedded hardware and firmware integration**.
+My primary contribution focused on **embedded hardware, firmware, ECU communication, and system integration**.
 
 ### I worked on:
 
-* ESP32-based sensor acquisition
-* Voltage sensing interface
-* Current sensing using ACS712
-* Temperature sensing using DS18B20
+* ESP32 sensor acquisition
+* Battery voltage sensing
+* ACS712 current sensing
+* DS18B20 temperature sensing
 * ESP32 CAN communication
 * ESP32–STM32 ECU integration
 * STM32 motor-control integration
-* Encoder feedback interface
-* Motor driver integration
+* Encoder feedback
+* TB6612FNG motor-driver integration
 * Thermal protection logic
-* Emergency shutdown mechanism
-* Hardware integration and debugging
-* System-level testing
+* Emergency shutdown
+* Hardware integration
+* Debugging and testing
 
-### My main engineering focus
+### My main engineering responsibility
 
 ```text
-Sensors
-   ↓
-ESP32 ECU
-   ↓
-CAN Communication
-   ↓
-STM32 ECU
-   ↓
-Motor Control
-   ↓
+Battery Sensors
+      ↓
+    ESP32 ECU
+      ↓
+  CAN Communication
+      ↓
+    STM32 ECU
+      ↓
+ Motor Control
+      ↓
 Encoder Feedback
+      ↓
+    ESP32 ECU
 ```
 
-This project gave me practical experience in **embedded hardware design, ECU architecture, sensor interfacing, CAN communication, motor control, debugging, and EV safety systems**.
+This gave me practical experience in:
+
+**Embedded Hardware + Firmware + ECU Communication + Motor Control + EV Safety**
 
 ---
 
-# 📈 What I Learned
+# 🧠 Key Engineering Learnings
 
-Through this project, I gained hands-on experience with:
+Through this project, I gained practical experience in:
 
-* Designing distributed embedded systems
-* Working with multiple microcontrollers
-* ECU-to-ECU communication
-* CAN bus implementation
+* Multi-ECU embedded architecture
 * Sensor interfacing
-* Motor driver integration
-* PWM-based motor control
+* ADC-based voltage measurement
+* Current sensing
+* Digital temperature sensing
+* CAN bus communication
+* PWM motor control
 * Encoder feedback
+* Motor-driver integration
 * Battery monitoring
 * Thermal protection
 * Fault handling
 * Embedded debugging
-* MQTT-based IoT systems
+* MQTT communication
 * Hardware-software integration
 * System-level testing
 
-A major learning from the project was the importance of **separating monitoring, communication, and real-time control responsibilities** across embedded nodes.
+A major design learning was that **safety-critical motor decisions should remain local to the real-time ECU**, rather than depending on the cloud or dashboard.
 
 ---
 
-# ⚠️ Current Limitations
+# ⚠️ Limitations
 
-The current prototype has several limitations:
+The current prototype has several limitations.
 
 ### 1. Aggregate Battery Voltage
 
-The system monitors pack voltage rather than individual cell voltages.
+The current implementation monitors aggregate pack voltage rather than individual cell voltages.
 
-Therefore, cell imbalance cannot be directly detected.
+Therefore, individual cell imbalance cannot be directly detected.
 
 ### 2. Public MQTT Broker
 
-The prototype uses a public EMQX broker without production-level security.
+The prototype uses a public EMQX broker without production-grade security.
 
-This architecture is suitable for demonstration and laboratory testing but requires security improvements for real-world deployment.
+### 3. Surface Temperature
 
-### 3. Surface Temperature Measurement
-
-The DS18B20 measures cell surface temperature rather than internal cell temperature.
+The DS18B20 measures the battery surface temperature rather than internal cell temperature.
 
 ### 4. SOC Accuracy
 
-The voltage + coulomb-counting approach can accumulate estimation error over long operating cycles.
+The voltage + coulomb-counting method can accumulate error over long operating cycles.
 
 ---
 
-# 🚀 Future Improvements
+# 🔮 Future Development
 
-Planned improvements include:
+Potential improvements include:
 
-* [ ] Individual cell voltage monitoring
-* [ ] Active/passive cell balancing
+* [ ] Per-cell voltage monitoring
+* [ ] Active cell balancing
+* [ ] Passive cell balancing
 * [ ] EKF-based SOC estimation
 * [ ] SOH estimation
-* [ ] Secure MQTT using TLS
+* [ ] TLS-secured MQTT
 * [ ] Private MQTT broker
 * [ ] OTA firmware updates
-* [ ] Improved internal battery temperature estimation
-* [ ] Multi-motor support
 * [ ] Improved thermal modelling
+* [ ] Internal battery temperature estimation
+* [ ] Multi-motor support
 * [ ] Production-level PCB implementation
 * [ ] Automotive-grade protection architecture
+
+---
+
+# 🏭 Relevance to EV & Embedded Systems
+
+This project provides hands-on exposure to concepts relevant to:
+
+### EV Electronics
+
+* Battery monitoring
+* Motor control
+* ECU architecture
+* Thermal management
+* Fault protection
+
+### Embedded Systems
+
+* ESP32
+* STM32
+* ADC
+* PWM
+* GPIO
+* Interrupts
+* SPI
+* CAN
+
+### Automotive Communication
+
+* CAN bus
+* ECU-to-ECU communication
+* Distributed control architecture
+
+### IoT
+
+* MQTT
+* EMQX
+* WebSocket
+* Real-time telemetry
+
+---
+
+# ⭐ Why This Project Is Different
+
+Most basic EV prototypes separate battery monitoring from motor control.
+
+This project creates a coordinated architecture:
+
+```text
+             ┌────────────────────┐
+             │    Battery Pack    │
+             └─────────┬──────────┘
+                       ↓
+              ┌─────────────────┐
+              │    ESP32 ECU    │
+              │                 │
+              │ Monitoring      │
+              │ SOC             │
+              │ MQTT            │
+              │ Dashboard       │
+              └────────┬────────┘
+                       │
+                      CAN
+                       │
+                       ▼
+              ┌─────────────────┐
+              │    STM32 ECU    │
+              │                 │
+              │ Motor Control   │
+              │ PWM             │
+              │ Thermal Safety  │
+              │ Shutdown        │
+              └────────┬────────┘
+                       ↓
+                    Motor
+```
+
+### Key Engineering Concept
+
+> **The ESP32 handles monitoring and connectivity, while the STM32 handles deterministic motor control and safety.**
+
+This separation improves modularity and allows the real-time safety functions to remain independent of the IoT communication layer.
+
+---
+
+# 🛠️ Project Structure
+
+Recommended repository structure:
+
+```text
+Smart-EV-BMS/
+│
+├── README.md
+│
+├── ESP32/
+│   ├── Sensor_Monitoring/
+│   ├── MQTT/
+│   ├── CAN_Communication/
+│   └── SOC_Estimation/
+│
+├── STM32/
+│   ├── Motor_Control/
+│   ├── CAN_Receiver/
+│   ├── Thermal_Protection/
+│   ├── PWM/
+│   └── Encoder/
+│
+├── Dashboard/
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
+│
+├── Hardware/
+│   ├── Circuit_Diagram/
+│   ├── System_Block_Diagram/
+│   ├── PCB/
+│   └── Wiring/
+│
+├── Images/
+│   ├── Prototype.jpg
+│   ├── Hardware_Top.jpg
+│   ├── Hardware_Side.jpg
+│   └── Dashboard.png
+│
+├── Documentation/
+│   ├── Project_Report.pdf
+│   └── Presentation.pdf
+│
+└── Results/
+    ├── Test_Data/
+    └── Graphs/
+```
+
+---
+
+# 🚀 Getting Started
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/Smart-EV-BMS.git
+cd Smart-EV-BMS
+```
+
+## 2. ESP32 Setup
+
+Configure:
+
+* Battery voltage sensor
+* ACS712
+* DS18B20
+* Encoder
+* MCP2515
+
+Then upload the ESP32 firmware.
+
+---
+
+## 3. STM32 Setup
+
+Configure:
+
+* MCP2515 / CAN interface
+* PWM timer
+* TB6612FNG
+* Encoder interface
+* Thermal protection logic
+
+Then flash the STM32 firmware.
+
+---
+
+## 4. MQTT Setup
+
+Configure the EMQX broker and MQTT topics:
+
+```text
+vehicle/telemetry
+vehicle/emergency
+vehicle/control/...
+```
+
+---
+
+## 5. Dashboard Setup
+
+Open the NEXUS dashboard and configure the MQTT/WebSocket connection.
+
+Dashboard:
+
+**NEXUS EV Dashboard**
+
+---
+
+# 📚 Documentation
+
+The complete academic documentation contains:
+
+* Introduction
+* Problem Statement
+* Objectives
+* Literature Survey
+* System Architecture
+* Hardware Design
+* Communication Architecture
+* BMS Functions
+* Thermal Management
+* SOC Estimation
+* Dashboard Architecture
+* Testing
+* Results
+* Limitations
+* Future Work
+
+The detailed project report is included separately from this README.
 
 ---
 
@@ -795,74 +1255,90 @@ Kattankulathur, Tamil Nadu, India
 * **Shibi S**
 * **Parnapalli Anish**
 
+### Project Guide
+
+**Dr. T. Rajalakshmi**
+Associate Professor
+Department of Electronics & Communication Engineering
+SRM Institute of Science and Technology
+
 ---
 
-# ⭐ Key Takeaways for Recruiters
+# 📌 Project Highlights
 
-This project demonstrates practical experience in:
+```text
+Dual ECU Architecture
+        ↓
+ESP32 + STM32
 
-**Embedded Systems**
+Battery Monitoring
+        ↓
+Voltage + Current + Temperature
 
-* ESP32
-* STM32
-* ADC
-* GPIO
-* PWM
-* Interrupts
+Automotive Communication
+        ↓
+CAN @ 500 kbps
 
-**Automotive / EV Electronics**
+Motor Control
+        ↓
+PWM + Encoder + TB6612FNG
 
-* ECU architecture
-* Battery monitoring
-* Motor control
-* Fault protection
-* Encoder feedback
+Safety
+        ↓
+Thermal Derating + Emergency Shutdown
 
-**Communication**
+IoT
+        ↓
+MQTT + EMQX + Web Dashboard
+```
 
-* CAN
-* SPI
-* MQTT
-* WebSocket
+---
 
-**Hardware Integration**
+# ⭐ Project Summary
 
-* Current sensing
-* Voltage sensing
-* Temperature sensing
-* Motor driver
-* Power regulation
+> **A dual-ECU Smart EV Battery Management System that combines real-time battery sensing, CAN-based ECU communication, intelligent thermal derating, motor control, emergency shutdown, and MQTT-enabled vehicle telemetry into a single embedded EV platform.**
 
-**Software**
+This project demonstrates practical experience across **embedded hardware, firmware, automotive communication, motor control, battery management, IoT, and system-level debugging**, making it particularly relevant to **EV, automotive electronics, embedded systems, and hardware engineering roles**.
 
-* Embedded C/C++
-* MQTT
-* JSON
-* JavaScript
-* Real-time dashboard
+---
+
+# 👤 Author
+
+## Ramachandru J
+
+**B.Tech Electronics & Communication Engineering**
+
+**Embedded Systems | EV Electronics | IoT | Hardware Design**
+
+Interested in building reliable embedded hardware and intelligent electronic systems for:
+
+* 🚗 Electric Vehicles
+* 🔋 Battery Management Systems
+* ⚙️ Embedded Systems
+* 🔌 Automotive Electronics
+* 📡 IoT Systems
 
 ---
 
 ## 🔗 Project Resources
 
-* 📄 [Project Report](./minor-final-report.pdf)
-* 🌐 [NEXUS EV Dashboard](https://anishparnapalli.github.io/Nexsus-EV-Dashboard/)
+* 📄 **Project Report:** `Documentation/Project_Report.pdf`
+* 🌐 **NEXUS EV Dashboard:** `https://anishparnapalli.github.io/Nexsus-EV-Dashboard/`
 
 ---
 
-## 📌 Project Summary
+## ⭐ If you find this project useful
 
-> **A dual-ECU Smart EV Battery Management System that combines real-time battery sensing, CAN-based ECU communication, intelligent thermal derating, motor control, emergency shutdown, and MQTT-enabled vehicle telemetry into a single embedded EV platform.**
+Consider giving the repository a ⭐ and exploring the implementation.
 
----
+```text
+Built with:
+ESP32 • STM32 • CAN • MQTT • EMQX • LiPo • PWM • Sensors
+```
 
-## 👤 Author
+```
 
-### Ramachandru J
+This version follows the **same visual/documentation pattern as the README you uploaded**—especially the `Overview → Problem → Proposed Solution → Architecture → Hardware → Core Technology → Communication → Testing → Contribution → Limitations → Future Development → Project Summary` flow. :contentReference[oaicite:1]{index=1}
 
-**B.Tech Electronics & Communication Engineering | Embedded Systems | EV Electronics | IoT**
-
-Interested in building reliable embedded hardware and intelligent electronic systems for **automotive, EV, industrial, and IoT applications**.
-
-```seconds.
+It also makes your **two-ECU contribution immediately visible**, which is particularly valuable for the embedded/EV/hardware roles you're targeting.
 ```
