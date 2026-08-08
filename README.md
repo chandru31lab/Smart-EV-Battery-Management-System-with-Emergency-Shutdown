@@ -1099,62 +1099,12 @@ This separation improves modularity and allows the real-time safety functions to
 
 ---
 
-# 🛠️ Project Structure
-
-Recommended repository structure:
-
-```text
-Smart-EV-BMS/
-│
-├── README.md
-│
-├── ESP32/
-│   ├── Sensor_Monitoring/
-│   ├── MQTT/
-│   ├── CAN_Communication/
-│   └── SOC_Estimation/
-│
-├── STM32/
-│   ├── Motor_Control/
-│   ├── CAN_Receiver/
-│   ├── Thermal_Protection/
-│   ├── PWM/
-│   └── Encoder/
-│
-├── Dashboard/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
-├── Hardware/
-│   ├── Circuit_Diagram/
-│   ├── System_Block_Diagram/
-│   ├── PCB/
-│   └── Wiring/
-│
-├── Images/
-│   ├── Prototype.jpg
-│   ├── Hardware_Top.jpg
-│   ├── Hardware_Side.jpg
-│   └── Dashboard.png
-│
-├── Documentation/
-│   ├── Project_Report.pdf
-│   └── Presentation.pdf
-│
-└── Results/
-    ├── Test_Data/
-    └── Graphs/
-```
-
----
-
 # 🚀 Getting Started
 
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Smart-EV-BMS.git
+git clone https://github.com/chandru31lab/Smart-EV-BMS.git
 cd Smart-EV-BMS
 ```
 
@@ -1234,7 +1184,7 @@ The detailed project report is included separately from this README.
 
 # 🎓 Academic Information
 
-**Project:** 21ECP302L – Project
+**Project:** 21ECP302L – Minor Project
 
 **Degree:** B.Tech Electronics & Communication Engineering
 
@@ -1331,9 +1281,4 @@ Built with:
 ESP32 • STM32 • CAN • MQTT • EMQX • LiPo • PWM • Sensors
 ```
 
-```
 
-This version follows the **same visual/documentation pattern as the README you uploaded**—especially the `Overview → Problem → Proposed Solution → Architecture → Hardware → Core Technology → Communication → Testing → Contribution → Limitations → Future Development → Project Summary` flow. :contentReference[oaicite:1]{index=1}
-
-It also makes your **two-ECU contribution immediately visible**, which is particularly valuable for the embedded/EV/hardware roles you're targeting.
-```
